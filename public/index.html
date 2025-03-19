@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERM - Терминальное приложение</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #1e1e1e;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            font-size: 16px;
+        }
+        
+        .terminal {
+            background-color: #0c0c0c;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            margin: 20px auto;
+        }
+        
+        .terminal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .prompt {
+            color: #5bf542;
+            font-weight: bold;
+        }
+        
+        .command-line {
+            margin-bottom: 10px;
+        }
+        
+        .output {
+            color: #cccccc;
+            margin-bottom: 15px;
+            white-space: pre-wrap;
+        }
+        
+        .button {
+            background-color: #333333;
+            color: #ffffff;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-family: monospace;
+        }
+        
+        .button:hover {
+            background-color: #444444;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .terminal-input {
+            background-color: #0c0c0c;
+            border: 1px solid #333;
+            color: #5bf542;
+            padding: 8px;
+            font-family: monospace;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+        
+        .subscription-section {
+            background-color: #1a1a1a;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #5bf542;
+        }
+        
+        .channel-option {
+            display: flex;
+            flex-direction: column;
+            background-color: #222;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .channel-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .channel-description {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .channel-price {
+            font-size: 14px;
+            color: #5bf542;
+        }
+        
+        .button-row {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .test-mode {
+            background-color: #540e0e;
+            padding: 5px;
+            text-align: center;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        
+        .sending-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #5bf542;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 1000;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        .fallback-message {
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+        }
+        
+        .fallback-link {
+            color: #5bf542;
+            text-decoration: none;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .coming-soon-tag {
+            display: inline-block;
+            background-color: #5b42f5;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        
+        .channel-coming-soon {
+            opacity: 0.6;
+            position: relative;
+        }
+        
+        .channel-coming-soon::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 5px;
+            pointer-events: none;
+        }
+        
+        .notify-button {
+            background-color: #5b42f5;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            margin-top: 5px;
+        }
+        
+        .notify-button:hover {
+            background-color: #4835c4;
+        }
+        
+        .analytics-event {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="terminal-header">
+            <h1>TERM Терминал</h1>
+            <p>Добро пожаловать в терминальное приложение Retarded Café</p>
+            <div id="test-mode-banner" class="test-mode" style="display: none;">
+                ТЕСТОВЫЙ РЕЖИМ: Использование минимальных цен для тестирования платежей
+            </div>
+        </div>
+        
+        <div class="command-line">
+            <span class="prompt">$</span> whois term
+        </div>
+        
+        <div class="output">
+Терминальное приложение для доступа к материалам лаборатории Retarded Café.
+Здесь вы найдете образовательные материалы, инструменты и возможность взаимодействия с командой.
+        </div>
+        
+        <div class="command-line">
+            <span class="prompt">$</span> status
+        </div>
+        
+        <div class="output" id="status-output">
+Проверка статуса подписки...
+        </div>
+        
+        <div class="command-line">
+            <span class="prompt">$</span> webapp --debug
+        </div>
+        
+        <div class="output" id="terminal-output">
+Загрузка информации о WebApp...
+        </div>
+        
+        <!-- Отображаем лог только в тестовом режиме -->
+        <div id="log-section" style="display: none;">
+            <div class="command-line">
+                <span class="prompt">$</span> log
+            </div>
+            
+            <div class="output" id="log-output">
+Журнал событий пуст.
+            </div>
+        </div>
+        
+        <div class="subscription-section">
+            <div class="section-title">📱 Подписки</div>
+            
+            <div class="channel-option">
+                <div class="channel-name">TERM Терминал</div>
+                <div class="channel-description">Доступ к терминальному приложению и образовательным материалам</div>
+                <div class="channel-price" id="term-price">от 1000 Stars / месяц</div>
+                <div class="button-row">
+                    <button class="button" id="subscribe-term-monthly-btn">Месяц (<span id="monthly-stars">1000</span>⭐)</button>
+                    <button class="button" id="subscribe-term-quarterly-btn">3 месяца (<span id="quarterly-stars">2700</span>⭐)</button>
+                    <button class="button" id="subscribe-term-annual-btn">Год (<span id="annual-stars">9600</span>⭐)</button>
+                </div>
+            </div>
+            
+            <div class="channel-option">
+                <div class="channel-name">Disruptor's Journal</div>
+                <div class="channel-description">Дневник цифрового диссидента</div>
+                <div class="channel-price" id="disruptors-price">1024 Stars</div>
+                <button class="button" id="subscribe-disruptors-btn">Оформить подписку</button>
+            </div>
+            
+            <div class="channel-option">
+                <div class="channel-name">Retarded Café Lab</div>
+                <div class="channel-description">Исследовательская лаборатория</div>
+                <div class="channel-price" id="retarded-price">1337 Stars</div>
+                <button class="button" id="subscribe-retarded-btn">Оформить подписку</button>
+            </div>
+            
+            <div class="channel-option channel-coming-soon">
+                <div class="channel-name">Digital Nomad Protocol <span class="coming-soon-tag">Скоро</span></div>
+                <div class="channel-description">Цифровой кочевник</div>
+                <div class="channel-price" id="nomad-price">256 Stars</div>
+                <button class="notify-button" id="notify-nomad-btn">Получить уведомление о запуске</button>
+            </div>
+        </div>
+        
+        <div id="fallback-links" style="display: none; margin: 15px 0; padding: 10px; background-color: #333; border-radius: 5px;"></div>
+        
+        <div class="button-container">
+            <button class="button" id="subscribe-btn">Оформить подписку</button>
+            <button class="button" id="content-btn">Образовательные материалы</button>
+            <button class="button" id="status-btn">Проверить статус</button>
+            <button class="button" id="ask-ai-btn">Спросить у ИИ</button>
+            <button class="button" id="close-btn">Закрыть</button>
+        </div>
+        
+        <!-- Невидимые элементы для отслеживания аналитики -->
+        <div class="analytics-event" id="view_subscription_page"></div>
+        <div class="analytics-event" id="click_subscribe_button"></div>
+        <div class="analytics-event" id="start_payment"></div>
+        <div class="analytics-event" id="complete_payment"></div>
+        <div class="analytics-event" id="cancel_payment"></div>
+        <div class="analytics-event" id="return_after_cancel"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализация Telegram WebApp
+            const tg = window.Telegram.WebApp;
+            tg.expand(); // Расширяем на весь экран
+            
+            // Определяем, находимся ли мы в локальном (тестовом) окружении
+            // В реальном приложении это может быть сделано через URL параметр или запрос к API
+            const isTestMode = window.location.href.includes('ngrok') || 
+                              window.location.hostname === 'localhost' || 
+                              window.location.port === '3000' ||
+                              window.location.href.includes('local') ||
+                              window.location.href.includes('test=true');
+            
+            // URL API в зависимости от окружения
+            const API_URL = isTestMode 
+                ? 'http://localhost:3001/api/miniapp' 
+                : 'https://app.retarded.cafe/api/miniapp';
+            
+            // Устанавливаем тестовые цены для локального окружения
+            if (isTestMode) {
+                // Показываем баннер тестового режима
+                document.getElementById('test-mode-banner').style.display = 'block';
+                
+                // Показываем секцию с логами
+                document.getElementById('log-section').style.display = 'block';
+                
+                // Обновляем цены для TERM
+                document.getElementById('monthly-stars').textContent = '1';
+                document.getElementById('quarterly-stars').textContent = '3';
+                document.getElementById('annual-stars').textContent = '10';
+                document.getElementById('term-price').textContent = 'от 1 Stars / месяц (тест)';
+                
+                // Обновляем цены для каналов
+                document.getElementById('disruptors-price').textContent = '5 Stars (тест)';
+                document.getElementById('retarded-price').textContent = '7 Stars (тест)';
+                document.getElementById('nomad-price').textContent = '3 Stars (тест)';
+            }
+            
+            // Добавляем дебаг-панель для отображения информации
+            const terminalOutput = document.getElementById('terminal-output');
+            if (terminalOutput) {
+                terminalOutput.innerHTML = 
+                    `WebApp Init Data: ${tg.initData ? 'Есть ✅' : 'Отсутствует ❌'}<br>` +
+                    `User Info: ${tg.initDataUnsafe?.user ? 'Есть ✅' : 'Отсутствует ❌'}<br>` +
+                    `Test Mode: ${isTestMode ? 'Включен ✅' : 'Выключен ❌'}<br>` +
+                    `Platform: ${tg.platform || 'Неизвестно'}<br>` +
+                    `Version: ${tg.version || 'Неизвестно'}<br>` +
+                    `API URL: ${API_URL}<br>`;
+            }
+            
+            // Отображаем данные о пользователе
+            const userData = tg.initDataUnsafe?.user;
+            const statusOutput = document.getElementById('status-output');
+            
+            // Логируем просмотр страницы подписки
+            logAnalyticsEvent('view_subscription_page');
+            
+            if (userData) {
+                statusOutput.textContent = `Пользователь: ${userData.first_name} ${userData.last_name || ''}\nID: ${userData.id}\n\nСтатус подписки будет показан здесь.`;
+                
+                // Запрос статуса подписки
+                fetchSubscriptionStatus();
+            } else {
+                statusOutput.textContent = 'Не удалось получить данные пользователя.';
+            }
+            
+            /**
+             * Логирует событие аналитики
+             * @param {string} eventName - Название события
+             * @param {Object} data - Дополнительные данные
+             */
+            function logAnalyticsEvent(eventName, data = {}) {
+                // Логируем событие в консоль и отправляем на сервер
+                const timestamp = new Date().toISOString();
+                console.log(`Analytics Event [${timestamp}]: ${eventName}`, data);
+                
+                // Отмечаем в журнале
+                logAction('analytics', { event: eventName, ...data });
+                
+                // Отправляем событие на сервер для аналитики
+                fetch(`${API_URL}/log-analytics`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        initData: tg.initData,
+                        event: eventName,
+                        data: data,
+                        timestamp: timestamp
+                    })
+                }).catch(error => {
+                    console.error('Ошибка отправки аналитики:', error);
+                });
+            }
+            
+            // Функция для проверки статуса подписки
+            async function fetchSubscriptionStatus() {
+                try {
+                    logAction('check_status', { action: 'check subscription status' });
+                    
+                    const response = await fetch(`${API_URL}/get-subscription-status`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            initData: tg.initData
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const subsInfo = data.subscription;
+                        
+                        if (data.has_subscription) {
+                            statusOutput.textContent = `Активная подписка: ${subsInfo.tier}\nДействует до: ${new Date(subsInfo.end_date).toLocaleDateString()}\nОсталось дней: ${subsInfo.days_left}`;
+                        } else {
+                            statusOutput.textContent = 'У вас нет активной подписки. Используйте меню ниже, чтобы оформить подписку.';
+                        }
+                    } else {
+                        throw new Error(data.error || 'Не удалось получить информацию о подписке');
+                    }
+                } catch (error) {
+                    logAction('error', { action: 'check_status', error: error.message });
+                    statusOutput.textContent = `Ошибка при получении статуса: ${error.message}`;
+                }
+            }
+            
+            // Функция для логирования действий
+            function logAction(action, data) {
+                // В любом режиме логируем в консоль браузера
+                console.log(`Action: ${action}`, data);
+                
+                // Обновляем UI с логами только в тестовом режиме
+                if (isTestMode) {
+                    const logOutput = document.getElementById('log-output');
+                    if (logOutput) {
+                        const timestamp = new Date().toLocaleTimeString();
+                        logOutput.innerHTML = `${timestamp}: ${action} → ${JSON.stringify(data)}<br>` + logOutput.innerHTML;
+                    }
+                }
+            }
+            
+            // Функция для создания инвойса в TERM
+            async function createTermInvoice(tierId) {
+                try {
+                    // Логируем нажатие на кнопку подписки
+                    logAnalyticsEvent('click_subscribe_button', { type: 'term', tier: tierId });
+                    
+                    // Добавляем визуальный индикатор
+                    const indicator = document.createElement('div');
+                    indicator.className = 'sending-indicator';
+                    indicator.textContent = 'Создание платежа...';
+                    document.body.appendChild(indicator);
+                    
+                    logAction('create_term_invoice', { tierId, test_mode: isTestMode });
+                    
+                    // Логируем начало процесса оплаты
+                    logAnalyticsEvent('start_payment', { type: 'term', tier: tierId });
+                    
+                    // Делаем запрос к API для получения ссылки на инвойс
+                    const response = await fetch(`${API_URL}/create-term-invoice`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            initData: tg.initData,
+                            tierId: tierId,
+                            test_mode: isTestMode
+                        })
+                    });
+                    
+                    // Удаляем индикатор
+                    document.body.removeChild(indicator);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Ошибка сервера: ${response.status} - ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.invoice_url) {
+                        logAction('invoice_created', { 
+                            tier_name: data.tier_name, 
+                            amount: data.amount, 
+                            duration: data.duration 
+                        });
+                        
+                        // Используем WebApp.openInvoice для открытия инвойса прямо в WebApp
+                        window.Telegram.WebApp.openInvoice(data.invoice_url, function(status) {
+                            if (status === 'paid') {
+                                logAction('payment_success', { tierId, status });
+                                logAnalyticsEvent('complete_payment', { 
+                                    type: 'term', 
+                                    tier: tierId, 
+                                    amount: data.amount
+                                });
+                                
+                                // Обновляем статус подписки после успешной оплаты
+                                fetchSubscriptionStatus();
+                            } else {
+                                logAction('payment_cancelled', { tierId, status });
+                                logAnalyticsEvent('cancel_payment', { 
+                                    type: 'term', 
+                                    tier: tierId,
+                                    status: status
+                                });
+                                
+                                // Через 3 секунды проверяем, вернулся ли пользователь к форме
+                                setTimeout(() => {
+                                    if (document.visibilityState === 'visible') {
+                                        logAnalyticsEvent('return_after_cancel', { 
+                                            type: 'term', 
+                                            tier: tierId 
+                                        });
+                                    }
+                                }, 3000);
+                            }
+                        });
+                    } else {
+                        throw new Error(data.error || 'Не удалось создать инвойс');
+                    }
+                } catch (error) {
+                    logAction('error', { action: 'create_term_invoice', tierId, error: error.message });
+                    logAnalyticsEvent('payment_error', { 
+                        type: 'term', 
+                        tier: tierId,
+                        error: error.message
+                    });
+                    
+                    // Показываем сообщение об ошибке
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.textContent = `Ошибка: ${error.message}`;
+                    errorMsg.style.backgroundColor = '#ff4c4c';
+                    errorMsg.style.color = 'white';
+                    errorMsg.style.padding = '10px';
+                    errorMsg.style.margin = '10px 0';
+                    errorMsg.style.borderRadius = '5px';
+                    errorMsg.style.textAlign = 'center';
+                    
+                    // Удаляем предыдущие сообщения об ошибках
+                    const previousErrors = document.querySelectorAll('.error-message');
+                    previousErrors.forEach(el => el.remove());
+                    
+                    // Добавляем сообщение в верхнюю часть интерфейса
+                    const terminalHeader = document.querySelector('.terminal-header');
+                    terminalHeader.after(errorMsg);
+                    
+                    // Показываем альтернативную ссылку
+                    showFallbackLink('/subscribe');
+                    
+                    // Удаляем сообщение через 5 секунд
+                    setTimeout(() => {
+                        errorMsg.remove();
+                    }, 5000);
+                }
+            }
+            
+            // Функция для создания инвойса для канала
+            async function createChannelInvoice(channelId) {
+                try {
+                    // Логируем нажатие на кнопку подписки
+                    logAnalyticsEvent('click_subscribe_button', { type: 'channel', channel: channelId });
+                    
+                    // Добавляем визуальный индикатор
+                    const indicator = document.createElement('div');
+                    indicator.className = 'sending-indicator';
+                    indicator.textContent = 'Создание платежа...';
+                    document.body.appendChild(indicator);
+                    
+                    logAction('create_channel_invoice', { channelId, test_mode: isTestMode });
+                    
+                    // Логируем начало процесса оплаты
+                    logAnalyticsEvent('start_payment', { type: 'channel', channel: channelId });
+                    
+                    // Делаем запрос к API для получения ссылки на инвойс
+                    const response = await fetch(`${API_URL}/create-channel-invoice`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            initData: tg.initData,
+                            channelId: channelId,
+                            test_mode: isTestMode
+                        })
+                    });
+                    
+                    // Удаляем индикатор
+                    document.body.removeChild(indicator);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Ошибка сервера: ${response.status} - ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.invoice_url) {
+                        logAction('invoice_created', { 
+                            channel_name: data.channel_name, 
+                            amount: data.amount, 
+                            duration: data.duration 
+                        });
+                        
+                        // Используем WebApp.openInvoice для открытия инвойса прямо в WebApp
+                        window.Telegram.WebApp.openInvoice(data.invoice_url, function(status) {
+                            if (status === 'paid') {
+                                logAction('payment_success', { channelId, status });
+                                logAnalyticsEvent('complete_payment', { 
+                                    type: 'channel', 
+                                    channel: channelId, 
+                                    amount: data.amount
+                                });
+                                
+                                // Обновляем статус подписки после успешной оплаты
+                                fetchSubscriptionStatus();
+                            } else {
+                                logAction('payment_cancelled', { channelId, status });
+                                logAnalyticsEvent('cancel_payment', { 
+                                    type: 'channel', 
+                                    channel: channelId,
+                                    status: status
+                                });
+                                
+                                // Через 3 секунды проверяем, вернулся ли пользователь к форме
+                                setTimeout(() => {
+                                    if (document.visibilityState === 'visible') {
+                                        logAnalyticsEvent('return_after_cancel', { 
+                                            type: 'channel', 
+                                            channel: channelId 
+                                        });
+                                    }
+                                }, 3000);
+                            }
+                        });
+                    } else {
+                        throw new Error(data.error || 'Не удалось создать инвойс');
+                    }
+                } catch (error) {
+                    logAction('error', { action: 'create_channel_invoice', channelId, error: error.message });
+                    logAnalyticsEvent('payment_error', { 
+                        type: 'channel',
+                        channel: channelId,
+                        error: error.message 
+                    });
+                    
+                    // Показываем сообщение об ошибке
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.textContent = `Ошибка: ${error.message}`;
+                    errorMsg.style.backgroundColor = '#ff4c4c';
+                    errorMsg.style.color = 'white';
+                    errorMsg.style.padding = '10px';
+                    errorMsg.style.margin = '10px 0';
+                    errorMsg.style.borderRadius = '5px';
+                    errorMsg.style.textAlign = 'center';
+                    
+                    // Удаляем предыдущие сообщения об ошибках
+                    const previousErrors = document.querySelectorAll('.error-message');
+                    previousErrors.forEach(el => el.remove());
+                    
+                    // Добавляем сообщение в верхнюю часть интерфейса
+                    const terminalHeader = document.querySelector('.terminal-header');
+                    terminalHeader.after(errorMsg);
+                    
+                    // Показываем альтернативную ссылку
+                    showFallbackLink('/subscribe');
+                    
+                    // Удаляем сообщение через 5 секунд
+                    setTimeout(() => {
+                        errorMsg.remove();
+                    }, 5000);
+                }
+            }
+            
+            // Обработчики событий для кнопок подписки TERM
+            document.getElementById('subscribe-term-monthly-btn').addEventListener('click', function() {
+                createTermInvoice('monthly');
+            });
+            
+            document.getElementById('subscribe-term-quarterly-btn').addEventListener('click', function() {
+                createTermInvoice('quarterly');
+            });
+            
+            document.getElementById('subscribe-term-annual-btn').addEventListener('click', function() {
+                createTermInvoice('annual');
+            });
+            
+            // Обработчики событий для кнопок подписки на каналы
+            document.getElementById('subscribe-disruptors-btn').addEventListener('click', function() {
+                createChannelInvoice('disruptors_journal');
+            });
+            
+            document.getElementById('subscribe-retarded-btn').addEventListener('click', function() {
+                createChannelInvoice('retarded_cafe_lab');
+            });
+            
+            // Обработчик для кнопки уведомления о запуске Digital Nomad Protocol
+            document.getElementById('notify-nomad-btn').addEventListener('click', function() {
+                logAnalyticsEvent('notify_request', { channel: 'digital_nomad_protocol' });
+                
+                try {
+                    // Отправляем данные боту
+                    const data = {
+                        action: 'notify_launch',
+                        channel: 'digital_nomad_protocol'
+                    };
+                    logAction('notify_launch', data);
+                    tg.sendData(JSON.stringify(data));
+                    
+                    // Показываем сообщение об успешной подписке на уведомления
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'success-message';
+                    successMsg.textContent = 'Вы успешно подписались на уведомления о запуске Digital Nomad Protocol';
+                    successMsg.style.backgroundColor = '#5bf542';
+                    successMsg.style.color = 'black';
+                    successMsg.style.padding = '10px';
+                    successMsg.style.margin = '10px 0';
+                    successMsg.style.borderRadius = '5px';
+                    successMsg.style.textAlign = 'center';
+                    
+                    // Удаляем предыдущие сообщения об успехе
+                    const previousMessages = document.querySelectorAll('.success-message');
+                    previousMessages.forEach(el => el.remove());
+                    
+                    // Добавляем сообщение в верхнюю часть интерфейса
+                    const terminalHeader = document.querySelector('.terminal-header');
+                    terminalHeader.after(successMsg);
+                    
+                    // Удаляем сообщение через 5 секунд
+                    setTimeout(() => {
+                        successMsg.remove();
+                    }, 5000);
+                    
+                    // Изменяем текст кнопки
+                    document.getElementById('notify-nomad-btn').textContent = 'Вы подписаны на запуск';
+                    document.getElementById('notify-nomad-btn').disabled = true;
+                } catch (error) {
+                    logAction('error', { action: 'notify_launch', error: error.message });
+                    
+                    // Показываем сообщение об ошибке
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.textContent = `Ошибка: ${error.message}`;
+                    errorMsg.style.backgroundColor = '#ff4c4c';
+                    errorMsg.style.color = 'white';
+                    errorMsg.style.padding = '10px';
+                    errorMsg.style.margin = '10px 0';
+                    errorMsg.style.borderRadius = '5px';
+                    errorMsg.style.textAlign = 'center';
+                    
+                    // Удаляем предыдущие сообщения об ошибках
+                    const previousErrors = document.querySelectorAll('.error-message');
+                    previousErrors.forEach(el => el.remove());
+                    
+                    // Добавляем сообщение в верхнюю часть интерфейса
+                    const terminalHeader = document.querySelector('.terminal-header');
+                    terminalHeader.after(errorMsg);
+                    
+                    // Удаляем сообщение через 5 секунд
+                    setTimeout(() => {
+                        errorMsg.remove();
+                    }, 5000);
+                }
+            });
+            
+            // Другие обработчики кнопок (используем передачу данных через bot)
+            document.getElementById('subscribe-btn').addEventListener('click', function() {
+                logAnalyticsEvent('click_menu_button', { button: 'subscribe' });
+                
+                const data = {
+                    action: 'subscribe'
+                };
+                logAction('subscribe', data);
+                tg.sendData(JSON.stringify(data));
+                
+                // Показываем альтернативную ссылку
+                showFallbackLink('/subscribe');
+            });
+            
+            document.getElementById('content-btn').addEventListener('click', function() {
+                logAnalyticsEvent('click_menu_button', { button: 'content' });
+                
+                const data = {
+                    action: 'content'
+                };
+                logAction('content', data);
+                tg.sendData(JSON.stringify(data));
+                
+                // Показываем альтернативную ссылку
+                showFallbackLink('/content');
+            });
+            
+            document.getElementById('status-btn').addEventListener('click', function() {
+                logAnalyticsEvent('click_menu_button', { button: 'status' });
+                
+                // Отправляем данные боту
+                const data = {
+                    action: 'status'
+                };
+                logAction('status', data);
+                tg.sendData(JSON.stringify(data));
+                
+                // А также обновляем статус в мини-приложении
+                fetchSubscriptionStatus();
+                
+                // Показываем альтернативную ссылку
+                showFallbackLink('/status');
+            });
+            
+            document.getElementById('ask-ai-btn').addEventListener('click', function() {
+                logAnalyticsEvent('click_menu_button', { button: 'ask_ai' });
+                
+                const data = {
+                    action: 'ask_ai'
+                };
+                logAction('ask_ai', data);
+                tg.sendData(JSON.stringify(data));
+                
+                // Альтернативной ссылки нет для этой команды
+                tg.close();
+            });
+            
+            document.getElementById('close-btn').addEventListener('click', function() {
+                logAnalyticsEvent('click_menu_button', { button: 'close' });
+                tg.close();
+            });
+            
+            // Отслеживаем видимость страницы для аналитики
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    logAnalyticsEvent('return_to_app');
+                } else {
+                    logAnalyticsEvent('leave_app');
+                }
+            });
+            
+            // Функция для показа альтернативной ссылки
+            function showFallbackLink(command) {
+                setTimeout(() => {
+                    // Если пользователь все еще в мини-приложении через 3 секунды,
+                    // показываем ссылку на прямую команду
+                    const fallbackDiv = document.getElementById('fallback-links');
+                    if (fallbackDiv) {
+                        fallbackDiv.innerHTML = `
+                            <div class="fallback-message">
+                                Если данные не отправились автоматически, используйте прямую команду:
+                                <a href="https://t.me/your_bot_username${command}" class="fallback-link">${command}</a>
+                            </div>
+                        `;
+                        fallbackDiv.style.display = 'block';
+                    }
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TERM Mini App - Retarded Café</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      background-color: #000;
+      color: #00FF00;
+      font-family: 'Courier New', monospace;
+      margin: 0;
+      padding: 10px;
+      max-width: 100%;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 95vh;
+    }
+    
+    .terminal {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #00FF00;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+    
+    .ascii-header {
+      white-space: pre;
+      font-size: 0.7em;
+      line-height: 1;
+      margin-bottom: 20px;
+      display: block;
+      text-align: center;
+    }
+    
+    .output {
+      margin-bottom: 20px;
+    }
+    
+    .prompt {
+      display: flex;
+      width: 100%;
+    }
+    
+    .prompt-symbol {
+      width: 15px;
+      flex-shrink: 0;
+    }
+    
+    .command-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #00FF00;
+      font-family: 'Courier New', monospace;
+      padding: 0;
+      outline: none;
+    }
+    
+    .response {
+      padding-left: 15px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      word-break: break-word;
+    }
+    
+    .success {
+      color: #00FF00;
+    }
+    
+    .error {
+      color: #FF0000;
+    }
+    
+    .info {
+      color: #00FFFF;
+    }
+    
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    
+    .option-button {
+      background: transparent;
+      border: 1px solid #00FF00;
+      color: #00FF00;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      text-align: center;
+    }
+    
+    .option-button:hover {
+      background: rgba(0, 255, 0, 0.1);
+    }
+    
+    .blink {
+      animation: blink-animation 1s steps(5, start) infinite;
+    }
+    
+    @keyframes blink-animation {
+      to {
+        visibility: hidden;
+      }
+    }
+    
+    .typing {
+      overflow: hidden;
+      border-right: 0.15em solid #00FF00;
+      white-space: nowrap;
+      margin: 0;
+      animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+    }
+    
+    @keyframes typing {
+      from { width: 0 }
+      to { width: 100% }
+    }
+    
+    @keyframes blink-caret {
+      from, to { border-color: transparent }
+      50% { border-color: #00FF00 }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <div class="output">
+      <pre class="ascii-header">
+████████╗███████╗██████╗ ███╗   ███╗
+╚══██╔══╝██╔════╝██╔══██╗████╗ ████║
+   ██║   █████╗  ██████╔╝██╔████╔██║
+   ██║   ██╔══╝  ██╔══██╗██║╚██╔╝██║
+   ██║   ███████╗██║  ██║██║ ╚═╝ ██║
+   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝
+      </pre>
+      
+      <div class="response typing">
+        [+] Доступ к терминалу лаборатории Retarded Café получен
+      </div>
+      
+      <div class="response">
+        Выберите опцию:
+      </div>
+    </div>
+    
+    <div class="options">
+      <button class="option-button" onclick="handleAction('subscribe')">Подписка</button>
+      <button class="option-button" onclick="handleAction('content')">Материалы</button>
+      <button class="option-button" onclick="handleAction('ask_ai')">Спросить AI</button>
+      <button class="option-button" onclick="handleAction('exit')">Выход</button>
+    </div>
+    
+    <div class="prompt">
+      <div class="prompt-symbol">$</div>
+      <input type="text" class="command-input" id="commandInput" placeholder="Введите команду...">
+    </div>
+  </div>
+
+  <script>
+    // Инициализация Telegram Web App
+    const telegramWebApp = window.Telegram.WebApp;
+    telegramWebApp.ready();
+    
+    // Устанавливаем цвета темы
+    telegramWebApp.setHeaderColor('#000000');
+    telegramWebApp.setBackgroundColor('#000000');
+    
+    // Настройка кнопки back
+    telegramWebApp.BackButton.hide();
+    
+    // Обработка ввода команды
+    document.getElementById('commandInput').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        const command = this.value.trim().toLowerCase();
+        processCommand(command);
+        this.value = '';
+      }
+    });
+    
+    // Обработка команд
+    function processCommand(command) {
+      const outputDiv = document.querySelector('.output');
+      
+      // Отображаем введенную команду
+      const commandElement = document.createElement('div');
+      commandElement.innerHTML = `$ ${command}`;
+      outputDiv.appendChild(commandElement);
+      
+      // Обрабатываем команду
+      let responseElement = document.createElement('div');
+      responseElement.className = 'response';
+      
+      switch(command) {
+        case 'help':
+          responseElement.innerHTML = `
+            Доступные команды:<br>
+            - help: показать список команд<br>
+            - subscribe: управление подпиской<br>
+            - content: образовательные материалы<br>
+            - ask: спросить AI эксперта<br>
+            - status: статус подписки<br>
+            - exit: выход из приложения
+          `;
+          break;
+          
+        case 'subscribe':
+          handleAction('subscribe');
+          responseElement.innerHTML = '[i] Переход к управлению подпиской...';
+          responseElement.className = 'response info';
+          break;
+          
+        case 'content':
+          handleAction('content');
+          responseElement.innerHTML = '[i] Переход к образовательным материалам...';
+          responseElement.className = 'response info';
+          break;
+          
+        case 'ask':
+          handleAction('ask_ai');
+          responseElement.innerHTML = '[i] Функция будет доступна в ближайшем обновлении...';
+          responseElement.className = 'response info';
+          break;
+          
+        case 'exit':
+          handleAction('exit');
+          responseElement.innerHTML = '[i] Закрытие терминала...';
+          responseElement.className = 'response info';
+          break;
+          
+        case 'status':
+          responseElement.innerHTML = '[i] Для получения статуса подписки используйте команду /status в боте';
+          responseElement.className = 'response info';
+          break;
+          
+        default:
+          responseElement.innerHTML = `[-] Ошибка: команда '${command}' не найдена. Введите 'help' для списка команд.`;
+          responseElement.className = 'response error';
+      }
+      
+      outputDiv.appendChild(responseElement);
+      
+      // Прокручиваем вниз
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+    
+    // Обработка действий кнопок
+    function handleAction(action) {
+      switch(action) {
+        case 'subscribe':
+          // Отправка данных в Telegram для оформления подписки
+          telegramWebApp.sendData(JSON.stringify({ action: 'subscribe' }));
+          break;
+          
+        case 'content':
+          // Отправка данных в Telegram для просмотра материалов
+          telegramWebApp.sendData(JSON.stringify({ action: 'content' }));
+          break;
+          
+        case 'ask_ai':
+          // Отправка данных в Telegram для запроса к AI
+          telegramWebApp.sendData(JSON.stringify({ action: 'ask_ai' }));
+          break;
+          
+        case 'exit':
+          // Закрытие мини-приложения
+          telegramWebApp.close();
+          break;
+      }
+    }
+  </script>
+</body>
+</html> 

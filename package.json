@@ -1,0 +1,44 @@
+{
+  "name": "term-bot",
+  "version": "1.0.0",
+  "description": "TERM - Telegram бот с терминальным интерфейсом для Retarded Café",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "lint": "eslint src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "terminal",
+    "education",
+    "retarded-cafe"
+  ],
+  "author": "Retarded Café Laboratory",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "config": "^3.3.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.21.2",
+    "mongoose": "^7.5.0",
+    "node-cron": "^3.0.2",
+    "telegraf": "^4.13.1",
+    "telegraf-session-local": "^2.1.1",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.48.0",
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/retarded-cafe/term-bot.git"
+  }
+}

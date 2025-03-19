@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  term-bot:
+    container_name: term-bot
+    image: retardedcafe/term-bot:latest
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - BOT_TOKEN=${BOT_TOKEN}
+      - ADMIN_USERS=${ADMIN_USERS}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - WEBHOOK_PORT=${WEBHOOK_PORT:-8443}
+      - USE_WEBHOOK=${USE_WEBHOOK:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    ports:
+      - "${WEBHOOK_PORT:-8443}:8443"
+    networks:
+      - term-bot-network
+
+networks:
+  term-bot-network:
+    driver: bridge
+
+volumes:
+  mongodb_data: 
